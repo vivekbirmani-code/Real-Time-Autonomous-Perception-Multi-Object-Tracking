@@ -14,8 +14,15 @@ A real-time perception stack for autonomous systems: object detection and multi-
 ```bash
 pip install -e .
 
-# Download weights and run tracking on a video or webcam
+# Webcam (default camera)
 yolo track model=yolo11n.pt source=0 show=True
+
+# Sample assets (download once if missing)
+python scripts/download_demo_assets.py
+
+# Image or bundled demo video
+yolo track model=yolo11n.pt source=ultralytics/assets/bus.jpg show=True
+yolo track model=yolo11n.pt source=ultralytics/assets/solutions_ci_demo.mp4 show=True
 ```
 
 Python:
@@ -24,7 +31,7 @@ Python:
 from ultralytics import YOLO
 
 model = YOLO("yolo11n.pt")
-model.track(source="video.mp4", show=True, persist=True)
+model.track(source="ultralytics/assets/solutions_ci_demo.mp4", show=True, persist=True)
 ```
 
 ## Project structure
