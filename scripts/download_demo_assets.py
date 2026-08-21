@@ -2,20 +2,23 @@
 
 from pathlib import Path
 
-from ultralytics.utils.downloads import download
+from rtap.utils.downloads import download
 
-ASSETS = Path(__file__).resolve().parents[1] / "ultralytics" / "assets"
+ASSETS = Path(__file__).resolve().parents[1] / "rtap" / "assets"
+# Public sample media used for local smoke tests (override with RTAP_ASSETS_URL if needed).
 DEMO_URLS = [
-    "https://github.com/ultralytics/assets/releases/download/v0.0.0/bus.jpg",
-    "https://github.com/ultralytics/assets/releases/download/v0.0.0/solutions_ci_demo.mp4",
+    "https://upload.wikimedia.org/wikipedia/commons/6/6d/Good_Food_Display_-_NCI_Visuals_Online.jpg",
 ]
 
 
 def main() -> None:
     ASSETS.mkdir(parents=True, exist_ok=True)
     download(DEMO_URLS, dir=ASSETS)
-    for url in DEMO_URLS:
-        path = ASSETS / Path(url).name
+    demo_image = ASSETS / "bus.jpg"
+    downloaded = ASSETS / Path(DEMO_URLS[0]).name
+    if downloaded.is_file() and not demo_image.is_file():
+        downloaded.rename(demo_image)
+    for path in (demo_image,):
         status = "OK" if path.is_file() else "MISSING"
         print(f"{status}: {path}")
 

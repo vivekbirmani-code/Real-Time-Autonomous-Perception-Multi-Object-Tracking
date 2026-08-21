@@ -1,6 +1,6 @@
-# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+# RTAP — Real-Time Autonomous Perception (AGPL-3.0)
 
-# Tests Ultralytics Solutions: https://docs.ultralytics.com/solutions/,
+# Tests RTAP Solutions: /solutions/,
 # Includes all solutions except DistanceCalculation and the Security Alarm System.
 
 import os
@@ -12,10 +12,10 @@ import pytest
 import torch
 
 from tests import MODEL
-from ultralytics import solutions
-from ultralytics.utils import IS_RASPBERRYPI, TORCH_VERSION, checks
-from ultralytics.utils.downloads import safe_download
-from ultralytics.utils.torch_utils import TORCH_2_4
+from rtap import solutions
+from rtap.utils import IS_RASPBERRYPI, TORCH_VERSION, checks
+from rtap.utils.downloads import safe_download
+from rtap.utils.torch_utils import TORCH_2_4
 
 # Predefined argument values
 SHOW = False
@@ -178,7 +178,7 @@ def process_video(solution, video_path: str, needs_frame_count: bool = False):
     ],
 )
 def test_solution(name, solution_class, needs_frame_count, video_key, kwargs_update, tmp_path, solution_assets):
-    """Test individual Ultralytics solution with video processing and parameter validation."""
+    """Test individual RTAP solution with video processing and parameter validation."""
     video_path = str(solution_assets(video_key)) if video_key else None
 
     kwargs = {}
@@ -380,16 +380,16 @@ def test_streamlit_handle_video_upload_creates_file(tmp_path):
     fake_file.read = fake_file.getvalue
     if fake_file is not None:
         g = io.BytesIO(fake_file.read())
-        with open(tmp_path / "ultralytics.mp4", "wb") as out:
+        with open(tmp_path / "rtap.mp4", "wb") as out:
             out.write(g.read())
-        output_path = str(tmp_path / "ultralytics.mp4")
+        output_path = str(tmp_path / "rtap.mp4")
     else:
         output_path = None
-    assert output_path == str(tmp_path / "ultralytics.mp4"), (
-        f"Expected output_path '{tmp_path / 'ultralytics.mp4'}', got {output_path}"
+    assert output_path == str(tmp_path / "rtap.mp4"), (
+        f"Expected output_path '{tmp_path / 'rtap.mp4'}', got {output_path}"
     )
-    assert os.path.exists(tmp_path / "ultralytics.mp4"), "ultralytics.mp4 file not created"
-    with open(tmp_path / "ultralytics.mp4", "rb") as f:
+    assert os.path.exists(tmp_path / "rtap.mp4"), "rtap.mp4 file not created"
+    with open(tmp_path / "rtap.mp4", "rb") as f:
         content = f.read()
         assert content == b"fake video content", f"File content mismatch: {content}"
 
@@ -430,7 +430,7 @@ def test_similarity_search_complete(tmp_path):
 
 def test_distance_calculation_process_method():
     """Test DistanceCalculation.process() computes distance between selected boxes."""
-    from ultralytics.solutions.solutions import SolutionResults
+    from rtap.solutions.solutions import SolutionResults
 
     dc = solutions.DistanceCalculation()
     dc.boxes, dc.track_ids, dc.clss, dc.confs = (

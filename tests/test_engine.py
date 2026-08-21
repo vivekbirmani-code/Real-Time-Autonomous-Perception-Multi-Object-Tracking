@@ -1,4 +1,4 @@
-# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+# RTAP — Real-Time Autonomous Perception (AGPL-3.0)
 
 import sys
 from collections import OrderedDict
@@ -10,15 +10,15 @@ import pytest
 import torch
 
 from tests import MODEL, SOURCE, TASK_MODEL_DATA
-from ultralytics import YOLO
-from ultralytics.cfg import get_cfg
-from ultralytics.engine.exporter import Exporter
-from ultralytics.engine.trainer import BaseTrainer
-from ultralytics.models.yolo import classify, depth, detect, obb, pose, segment, semantic
-from ultralytics.nn.distill_model import DistillationModel
-from ultralytics.nn.tasks import DetectionModel, load_checkpoint
-from ultralytics.utils import ASSETS, DEFAULT_CFG, IS_RASPBERRYPI, WEIGHTS_DIR
-from ultralytics.utils.torch_utils import unwrap_model
+from rtap import YOLO
+from rtap.cfg import get_cfg
+from rtap.engine.exporter import Exporter
+from rtap.engine.trainer import BaseTrainer
+from rtap.models.yolo import classify, depth, detect, obb, pose, segment, semantic
+from rtap.nn.distill_model import DistillationModel
+from rtap.nn.tasks import DetectionModel, load_checkpoint
+from rtap.utils import ASSETS, DEFAULT_CFG, IS_RASPBERRYPI, WEIGHTS_DIR
+from rtap.utils.torch_utils import unwrap_model
 
 
 def test_func(*args, **kwargs):
@@ -205,7 +205,7 @@ def test_distill_resume(tmp_path: Path):
 
 
 def test_distill_grayscale(tmp_path: Path):
-    """Test knowledge distillation on a single-channel dataset (https://github.com/ultralytics/ultralytics/issues/25066)."""
+    """Test knowledge distillation on a single-channel dataset ()."""
     teacher = DetectionModel("yolo26n.yaml", ch=3, nc=80, verbose=False)
     teacher_path = tmp_path / "teacher.pt"
     torch.save({"model": teacher}, teacher_path)
@@ -228,7 +228,7 @@ def test_load_checkpoint_state_dict_rejected(ckpt, tmp_path):
     """Test a state_dict checkpoint raises a clear TypeError instead of a cryptic AttributeError/KeyError."""
     weight = tmp_path / "bad.pt"
     torch.save(ckpt, weight)
-    with pytest.raises(TypeError, match="supported Ultralytics checkpoint format"):
+    with pytest.raises(TypeError, match="supported RTAP checkpoint format"):
         load_checkpoint(weight)
 
 
@@ -345,10 +345,10 @@ def test_train_reuses_loaded_checkpoint_model(monkeypatch, kwargs, uses_weights)
         def train(self):
             return None
 
-    monkeypatch.setattr("ultralytics.engine.model.checks.check_pip_update_available", lambda: None)
+    monkeypatch.setattr("rtap.engine.model.checks.check_pip_update_available", lambda: None)
     monkeypatch.setattr(model, "_smart_load", lambda key: FakeTrainer)
     monkeypatch.setattr(
-        "ultralytics.engine.model.load_checkpoint",
+        "rtap.engine.model.load_checkpoint",
         lambda path: (original_model, {"checkpoint": True}),
     )
 
@@ -378,7 +378,7 @@ def test_train_multi_custom_trainer_metrics_and_failure_keys(monkeypatch, tmp_pa
                 raise RuntimeError("failed repeated dataset")
             self.validator = SimpleNamespace(metrics=SimpleNamespace(results_dict={"fitness": 1.0}))
 
-    monkeypatch.setattr("ultralytics.engine.model.checks.check_pip_update_available", lambda: None)
+    monkeypatch.setattr("rtap.engine.model.checks.check_pip_update_available", lambda: None)
     results = model.train(
         data=["coco8.yaml", "coco8.yaml"],
         project=tmp_path,
@@ -408,7 +408,7 @@ def test_setup_model_respects_pretrained_arg_for_pt_models(monkeypatch, pretrain
 
     trainer.get_model = fake_get_model
     monkeypatch.setattr(
-        "ultralytics.engine.trainer.load_checkpoint", lambda path: (checkpoint_model, {"checkpoint": True})
+        "rtap.engine.trainer.load_checkpoint", lambda path: (checkpoint_model, {"checkpoint": True})
     )
 
     trainer.setup_model()

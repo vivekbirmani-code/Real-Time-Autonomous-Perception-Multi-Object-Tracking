@@ -1,4 +1,4 @@
-# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+# RTAP — Real-Time Autonomous Perception (AGPL-3.0)
 
 import io
 import os
@@ -19,10 +19,10 @@ import torch
 
 from tests import MODEL, SOURCE
 from tests.conftest import isolated_model_path
-from ultralytics import YOLO
-from ultralytics.cfg import TASK2DATA, TASK2MODEL, TASKS, _handle_deprecation, get_cfg
-from ultralytics.engine.exporter import EXPORT_ENVS, Exporter, export_formats, validate_args
-from ultralytics.utils import (
+from rtap import YOLO
+from rtap.cfg import TASK2DATA, TASK2MODEL, TASKS, _handle_deprecation, get_cfg
+from rtap.engine.exporter import EXPORT_ENVS, Exporter, export_formats, validate_args
+from rtap.utils import (
     ARM64,
     IS_RASPBERRYPI,
     LINUX,
@@ -32,8 +32,8 @@ from ultralytics.utils import (
     WINDOWS,
     checks,
 )
-from ultralytics.utils.export.engine import best_onnx_opset, modelopt_quantize_onnx, torch2onnx
-from ultralytics.utils.torch_utils import (
+from rtap.utils.export.engine import best_onnx_opset, modelopt_quantize_onnx, torch2onnx
+from rtap.utils.torch_utils import (
     TORCH_1_10,
     TORCH_1_11,
     TORCH_1_13,
@@ -75,7 +75,7 @@ def test_export_onnx_int8(isolated_model, precision):
 
 def test_best_onnx_opset_caps_int8_only(monkeypatch):
     """Check opset>=21 is capped for ONNX Runtime INT8 quantization, not normal ONNX export."""
-    from ultralytics.utils.export import engine
+    from rtap.utils.export import engine
 
     class _Defs:
         @staticmethod
@@ -96,7 +96,7 @@ def test_onnx_int8_quantize_excludes_non_weighted_ops(monkeypatch):
     import onnx
     import onnxruntime.quantization as ort_quantization
 
-    from ultralytics.utils.export.onnx import onnx_int8_quantize
+    from rtap.utils.export.onnx import onnx_int8_quantize
 
     calls = {}
     graph = SimpleNamespace(
@@ -155,7 +155,7 @@ def test_quantize_deprecation():
 
 def test_benchmark_forwards_legacy_precision(monkeypatch):
     """model.benchmark(half=True) must reach the benchmark call as quantize=16, not silently run FP32."""
-    import ultralytics.utils.benchmarks as bm
+    import rtap.utils.benchmarks as bm
 
     captured = {}
     monkeypatch.setattr(bm, "benchmark", lambda **kw: captured.update(kw) or {})
@@ -191,9 +191,9 @@ def test_export_rknn_batch_expansion(monkeypatch, tmp_path):
     """Check RKNN calibrates batch 1 before Toolkit expands to the requested batch."""
     calls = {}
     monkeypatch.setattr(
-        "ultralytics.utils.export.rknn.onnx2rknn", lambda **kwargs: calls.update(kwargs) or kwargs["output_dir"]
+        "rtap.utils.export.rknn.onnx2rknn", lambda **kwargs: calls.update(kwargs) or kwargs["output_dir"]
     )
-    monkeypatch.setattr("ultralytics.engine.exporter.file_size", lambda _: 1)
+    monkeypatch.setattr("rtap.engine.exporter.file_size", lambda _: 1)
 
     image = tmp_path / "image.jpg"
     exporter = SimpleNamespace(
@@ -215,7 +215,7 @@ def test_modelopt_quantize_onnx_excludes_sigmoid(monkeypatch):
 
     calls = {}
     graph = SimpleNamespace(input=[SimpleNamespace(name="images")])
-    monkeypatch.setattr("ultralytics.utils.export.engine.check_requirements", lambda *args, **kwargs: None)
+    monkeypatch.setattr("rtap.utils.export.engine.check_requirements", lambda *args, **kwargs: None)
     monkeypatch.setitem(
         sys.modules, "modelopt.onnx.quantization", SimpleNamespace(quantize=lambda *a, **k: calls.update(k))
     )
@@ -401,7 +401,7 @@ def test_export_coreml_matrix(task, dynamic, quantize, nms, batch, end2end):
 @pytest.mark.parametrize("format", ["coreml", "mlmodel"])
 def test_export_coreml(isolated_model, format, monkeypatch, tmp_path):
     """Test YOLO export to CoreML format and check for errors."""
-    from ultralytics.utils.export import coreml
+    from rtap.utils.export import coreml
 
     quantize, torch2coreml = [], coreml.torch2coreml
 
@@ -475,7 +475,7 @@ def test_export_coreml_nms_detect_only(model, expected_nms, monkeypatch):
         captured["metadata_nms"] = self.metadata["args"]["nms"]
 
     monkeypatch.setattr(Exporter, "export_coreml", stub)  # skip the actual CoreML export
-    monkeypatch.setattr("ultralytics.engine.exporter.LOGGER.warning", warnings.append)
+    monkeypatch.setattr("rtap.engine.exporter.LOGGER.warning", warnings.append)
     YOLO(model).export(format="coreml", nms=True, imgsz=32)
     assert captured["nms"] is expected_nms
     assert captured["metadata_nms"] is expected_nms

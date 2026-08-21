@@ -1,4 +1,4 @@
-# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+# RTAP — Real-Time Autonomous Perception (AGPL-3.0)
 
 import os
 from itertools import product
@@ -8,12 +8,12 @@ import pytest
 import torch
 
 from tests import CUDA_DEVICE_COUNT, CUDA_IS_AVAILABLE, MODEL, SOURCE
-from ultralytics import YOLO
-from ultralytics.cfg import TASK2DATA, TASK2MODEL, TASKS
-from ultralytics.utils import ASSETS, IS_JETSON, WEIGHTS_DIR
-from ultralytics.utils.autodevice import GPUInfo
-from ultralytics.utils.checks import check_amp, check_tensorrt
-from ultralytics.utils.torch_utils import TORCH_1_13, parse_device
+from rtap import YOLO
+from rtap.cfg import TASK2DATA, TASK2MODEL, TASKS
+from rtap.utils import ASSETS, IS_JETSON, WEIGHTS_DIR
+from rtap.utils.autodevice import GPUInfo
+from rtap.utils.checks import check_amp, check_tensorrt
+from rtap.utils.torch_utils import TORCH_1_13, parse_device
 
 # Try to find idle devices if CUDA is available
 DEVICES = []
@@ -119,9 +119,9 @@ def test_export_engine_matrix(task, dynamic, quantize, batch):
 @pytest.mark.parametrize("nc", [1, 3])
 def test_semantic_loss_all_ignore_amp(nc):
     """All-ignore guard must stay finite with large fp16 logits, where sum() overflows to inf (AMP is a GPU path)."""
-    from ultralytics.cfg import get_cfg
-    from ultralytics.nn.tasks import SemanticSegmentationModel
-    from ultralytics.utils.loss import SemanticSegmentationLoss
+    from rtap.cfg import get_cfg
+    from rtap.nn.tasks import SemanticSegmentationModel
+    from rtap.utils.loss import SemanticSegmentationLoss
 
     model = SemanticSegmentationModel(cfg="yolo26-sem.yaml", nc=nc, verbose=False)
     model.args = get_cfg()
@@ -157,12 +157,12 @@ def test_train_cold_process_nonzero_device():
     """Train on a nonzero GPU index in a fresh process with cold CUDA state, reproducing real CLI usage.
 
     A warm pytest process has CUDA initialized, so a subprocess without CUDA_VISIBLE_DEVICES is the only way to
-    reproduce cold-start device selection as on production pods (e.g. Ultralytics Platform).
+    reproduce cold-start device selection as on production pods (e.g. RTAP Platform).
     """
     import subprocess
 
     env = {k: v for k, v in os.environ.items() if k != "CUDA_VISIBLE_DEVICES"}
-    cmd = ["yolo", "train", f"model={MODEL}", "data=coco8.yaml", "imgsz=32", "epochs=1", f"device={max(DEVICES)}"]
+    cmd = ["rtap", "train", f"model={MODEL}", "data=coco8.yaml", "imgsz=32", "epochs=1", f"device={max(DEVICES)}"]
     subprocess.run(cmd, check=True, env=env)
 
 
@@ -210,7 +210,7 @@ def test_track_exported_model():
 @pytest.mark.skipif(not DEVICES, reason="No CUDA devices available")
 def test_autobatch():
     """Check optimal batch size for YOLO model training using autobatch utility."""
-    from ultralytics.utils.autobatch import check_train_batch_size
+    from rtap.utils.autobatch import check_train_batch_size
 
     check_train_batch_size(YOLO(MODEL).model.to(f"cuda:{DEVICES[0]}"), imgsz=64, amp=True)
 
@@ -219,7 +219,7 @@ def test_autobatch():
 @pytest.mark.skipif(not DEVICES, reason="No CUDA devices available")
 def test_utils_benchmarks(isolated_model):
     """Profile YOLO models for performance benchmarks."""
-    from ultralytics.utils.benchmarks import ProfileModels
+    from rtap.utils.benchmarks import ProfileModels
 
     # Pre-export a dynamic engine model to use dynamic inference
     YOLO(isolated_model).export(format="engine", imgsz=32, dynamic=True, batch=1, device=DEVICES[0])
@@ -238,8 +238,8 @@ def test_utils_benchmarks(isolated_model):
 @pytest.mark.skipif(not DEVICES, reason="No CUDA devices available")
 def test_predict_sam():
     """Test SAM model predictions using different prompts."""
-    from ultralytics import SAM
-    from ultralytics.models.sam import Predictor as SAMPredictor
+    from rtap import SAM
+    from rtap.models.sam import Predictor as SAMPredictor
 
     model = SAM(WEIGHTS_DIR / "sam2.1_b.pt")
     model.info()

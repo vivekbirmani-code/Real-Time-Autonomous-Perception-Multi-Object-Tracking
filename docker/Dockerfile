@@ -1,6 +1,6 @@
-# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+# RTAP — Real-Time Autonomous Perception (AGPL-3.0)
 
-# Builds ultralytics/ultralytics:latest image on DockerHub https://hub.docker.com/r/ultralytics/ultralytics
+# Builds rtap/rtap:latest image on DockerHub 
 # Image is CUDA-optimized for YOLO single/multi-GPU training and inference
 
 # Start FROM PyTorch image https://hub.docker.com/r/pytorch/pytorch or nvcr.io/nvidia/pytorch:25.02-py3
@@ -20,9 +20,9 @@ ENV PYTHONUNBUFFERED=1 \
     TORCH_CPP_LOG_LEVEL=ERROR
 
 # Downloads to user config dir
-ADD https://github.com/ultralytics/assets/releases/download/v0.0.0/Arial.ttf \
-    https://github.com/ultralytics/assets/releases/download/v0.0.0/Arial.Unicode.ttf \
-    /root/.config/Ultralytics/
+ADD  \
+     \
+    /root/.config/RTAP/
 
 # Install linux packages
 # gnupg required for Edge TPU install
@@ -34,27 +34,27 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Create working directory
-WORKDIR /ultralytics
+WORKDIR /rtap
 
 # Copy contents and configure dependencies
 COPY . .
 RUN sed -i'' -e 's/"opencv-python/"opencv-python-headless/' pyproject.toml
-ADD https://github.com/ultralytics/assets/releases/download/v8.4.0/yolo26n.pt .
+ADD  .
 
 # Install pip packages (uv already installed in base image)
 RUN uv pip install --system --no-cache -e "." albumentations faster-coco-eval && \
-    rm -rf tmp /root/.config/Ultralytics/persistent_cache.json
+    rm -rf tmp /root/.config/RTAP/persistent_cache.json
 
 # Usage --------------------------------------------------------------------------------------------------------------
 
-# Production builds: https://github.com/ultralytics/ultralytics/blob/main/.github/workflows/docker.yml
-# Example (build): t=ultralytics/ultralytics:latest && docker build -f docker/Dockerfile -t $t .
+# Production builds: 
+# Example (build): t=rtap/rtap:latest && docker build -f docker/Dockerfile -t $t .
 # Example (push): docker push $t
-# Example (pull): t=ultralytics/ultralytics:latest && docker pull $t
+# Example (pull): t=rtap/rtap:latest && docker pull $t
 # Example (run-gpu): docker run -it --ipc=host --device nvidia.com/gpu=all $t
 # Example (run-gpu-subset): docker run -it --ipc=host --device nvidia.com/gpu=2 --device nvidia.com/gpu=3 $t
 # Note: CDI devices 2,3 appear as cuda:0,1 inside the container.
 # Example (run-with-volume): docker run -it --ipc=host --device nvidia.com/gpu=all -v "$PWD/shared/datasets:/datasets" $t
 # CDI requires Docker >= 28.2.0 and nvidia-container-toolkit >= 1.18.
 # Legacy --gpus all can lose GPU access after host systemd daemon reloads (nvidia-container-toolkit#48).
-# Example (tag-release): t=ultralytics/ultralytics:latest tnew=ultralytics/ultralytics:vX.Y && docker tag $t $tnew && docker push $tnew
+# Example (tag-release): t=rtap/rtap:latest tnew=rtap/rtap:vX.Y && docker tag $t $tnew && docker push $tnew

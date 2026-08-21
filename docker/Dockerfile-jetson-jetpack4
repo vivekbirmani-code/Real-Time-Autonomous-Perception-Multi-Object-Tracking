@@ -1,6 +1,6 @@
-# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+# RTAP — Real-Time Autonomous Perception (AGPL-3.0)
 
-# Builds ultralytics/ultralytics:latest-jetson-jetpack4 image on DockerHub https://hub.docker.com/r/ultralytics/ultralytics
+# Builds rtap/rtap:latest-jetson-jetpack4 image on DockerHub 
 # Supports JetPack4.x for YOLO on Jetson Nano, TX2, Xavier NX, AGX Xavier
 
 # Start FROM https://catalog.ngc.nvidia.com/orgs/nvidia/containers/l4t-cuda
@@ -11,9 +11,9 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
 # Downloads to user config dir
-ADD https://github.com/ultralytics/assets/releases/download/v0.0.0/Arial.ttf \
-    https://github.com/ultralytics/assets/releases/download/v0.0.0/Arial.Unicode.ttf \
-    /root/.config/Ultralytics/
+ADD  \
+     \
+    /root/.config/RTAP/
 
 # Add NVIDIA repositories for TensorRT dependencies
 RUN wget -q -O - https://repo.download.nvidia.com/jetson/jetson-ota-public.asc | apt-key add - && \
@@ -34,12 +34,12 @@ RUN ln -sf /usr/bin/python3.8 /usr/bin/python3 && \
     ln -sf /usr/bin/pip3 /usr/bin/pip
 
 # Create working directory
-WORKDIR /ultralytics
+WORKDIR /rtap
 
 # Copy contents and configure dependencies
 COPY . .
 RUN sed -i'' -e 's/"opencv-python/"opencv-python-headless/' pyproject.toml
-ADD https://github.com/ultralytics/assets/releases/download/v8.4.0/yolo26n.pt .
+ADD  .
 
 # Replace pyproject.toml TF.js version with 'tensorflowjs>=3.9.0' for JetPack4 compatibility
 RUN sed -i 's/^\( *"tensorflowjs\)>=.*\(".*\)/\1>=3.9.0\2/' pyproject.toml
@@ -50,19 +50,19 @@ RUN python3 -m pip install --upgrade pip && \
 # Install pip packages and remove extra build files
 # Onnxruntime and TensorRT from https://elinux.org/Jetson_Zoo and https://forums.developer.nvidia.com/t/pytorch-for-jetson/72048
 RUN uv pip install --system \
-    https://github.com/ultralytics/assets/releases/download/v0.0.0/onnxruntime_gpu-1.8.0-cp38-cp38-linux_aarch64.whl \
-    https://github.com/ultralytics/assets/releases/download/v0.0.0/tensorrt-8.2.0.6-cp38-none-linux_aarch64.whl \
-    https://github.com/ultralytics/assets/releases/download/v0.0.0/torch-1.11.0a0+gitbc2c6ed-cp38-cp38-linux_aarch64.whl \
-    https://github.com/ultralytics/assets/releases/download/v0.0.0/torchvision-0.12.0a0+9b5a3fe-cp38-cp38-linux_aarch64.whl && \
+     \
+     \
+     \
+     && \
     uv pip install --system -e ".[export]" && \
     # Remove extra build files
-    rm -rf *.whl /root/.config/Ultralytics/persistent_cache.json
+    rm -rf *.whl /root/.config/RTAP/persistent_cache.json
 
 # Usage --------------------------------------------------------------------------------------------------------------
 
-# Production builds: https://github.com/ultralytics/ultralytics/blob/main/.github/workflows/docker.yml
-# Example (build): t=ultralytics/ultralytics:latest-jetson-jetpack4 && docker build --platform linux/arm64 -f docker/Dockerfile-jetson-jetpack4 -t $t .
+# Production builds: 
+# Example (build): t=rtap/rtap:latest-jetson-jetpack4 && docker build --platform linux/arm64 -f docker/Dockerfile-jetson-jetpack4 -t $t .
 # Example (push): docker push $t
-# Example (pull): t=ultralytics/ultralytics:latest-jetson-jetpack4 && docker pull $t
+# Example (pull): t=rtap/rtap:latest-jetson-jetpack4 && docker pull $t
 # Example (run-jetson): docker run -it --ipc=host --runtime=nvidia $t
 # Example (run-jetson-with-volume): docker run -it --ipc=host --runtime=nvidia -v "$PWD/shared/datasets:/datasets" $t

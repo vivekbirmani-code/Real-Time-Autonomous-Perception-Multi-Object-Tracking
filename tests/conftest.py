@@ -1,4 +1,4 @@
-# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+# RTAP — Real-Time Autonomous Perception (AGPL-3.0)
 
 import shutil
 from pathlib import Path
@@ -11,8 +11,8 @@ import pytest
 def solution_assets():
     """Return cached solution asset paths by name."""
     from tests import SOLUTION_ASSETS
-    from ultralytics.utils import ASSETS_URL, WEIGHTS_DIR
-    from ultralytics.utils.downloads import safe_download
+    from rtap.utils import ASSETS_URL, WEIGHTS_DIR
+    from rtap.utils.downloads import safe_download
 
     cache_dir = WEIGHTS_DIR / "solution_assets"
     cache_dir.mkdir(parents=True, exist_ok=True)
@@ -67,7 +67,7 @@ def pytest_collection_modifyitems(config, items):
     if not export_env:
         return
 
-    from ultralytics.engine.exporter import export_formats
+    from rtap.engine.exporter import export_formats
 
     env_by_format = dict(zip(export_formats()["Argument"], export_formats()["Env"]))
     for item in items:
@@ -80,7 +80,7 @@ def isolated_model_path(tmp_path, model):
     """Copy a model to a per-test path to prevent export file races under pytest-xdist."""
     model = Path(model)
     if not model.exists():
-        from ultralytics.utils.downloads import attempt_download_asset
+        from rtap.utils.downloads import attempt_download_asset
 
         model.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(attempt_download_asset(model.name), model)
@@ -99,7 +99,7 @@ def pytest_sessionstart(session):
     Args:
         session: The pytest session object.
     """
-    from ultralytics.utils.torch_utils import init_seeds
+    from rtap.utils.torch_utils import init_seeds
 
     init_seeds()
 
@@ -128,7 +128,7 @@ def pytest_sessionfinish(session, exitstatus):
     if hasattr(session.config, "workerinput"):
         return
 
-    from ultralytics.utils import WEIGHTS_DIR
+    from rtap.utils import WEIGHTS_DIR
 
     # Remove files
     models = [path for x in ("*.onnx", "*.torchscript") for path in WEIGHTS_DIR.rglob(x)]

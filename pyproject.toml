@@ -1,7 +1,7 @@
-# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+# RTAP — Real-Time Autonomous Perception (AGPL-3.0)
 
 # Overview:
-# This pyproject.toml file manages the build, packaging, and distribution of the Ultralytics library.
+# This pyproject.toml file manages the build, packaging, and distribution of the RTAP library.
 # It defines essential project metadata, dependencies, and settings used to develop and deploy the library.
 
 # Key Sections:
@@ -11,12 +11,12 @@
 # - [tool.*]: Configures settings for various tools (pytest, yapf, etc.) used in the project.
 
 # Installation:
-# The Ultralytics library can be installed using the command: 'pip install ultralytics'
+# The RTAP library can be installed using the command: 'pip install rtap-mot'
 # For development purposes, you can install the package in editable mode with: 'pip install -e .'
 # This approach allows for real-time code modifications without the need for re-installation.
 
 # Documentation:
-# For comprehensive documentation and usage instructions, visit: https://docs.ultralytics.com
+# For comprehensive documentation and usage instructions, visit: 
 
 [build-system]
 requires = ["setuptools>=70.0.0,<=84.0.0", "wheel"]
@@ -75,8 +75,7 @@ dependencies = [
     "polars>=0.20.0",
     "lap>=0.5.12",  # linear assignment for multi-object tracking
     "nvidia-ml-py>=12.0.0", # NVIDIA GPU monitoring https://pypi.org/project/nvidia-ml-py
-    "ultralytics-thop>=2.1.6", # FLOPs computation 
-    "ultralytics-platform>=0.1.3; python_version >= '3.11'",
+    "thop>=0.1.1", # FLOPs computation (optional at runtime)
 ]
 
 # Optional dependencies ------------------------------------------------------------------------------------------------
@@ -136,18 +135,18 @@ export-litert = [  # LiteRT export, Linux x86 and macOS (litert-torch trace + ai
     "ai-edge-quantizer>=0.6.0; (platform_system == 'Linux' and platform_machine == 'x86_64') or platform_system == 'Darwin'",
 ]
 export = [
-    "ultralytics[export-base]",
-    "ultralytics[export-tensorflow]",
-    "ultralytics[export-coreml]",
-    "ultralytics[export-litert]",
+    "rtap-mot[export-base]",
+    "rtap-mot[export-tensorflow]",
+    "rtap-mot[export-coreml]",
+    "rtap-mot[export-litert]",
     # Raspberry Pi Python 3.11 ExecuTorch inference requires the last known-good Linux ARM64 Torch 2.12 stack.
     "torch>=2.12.0,<2.13.0; platform_system == 'Linux' and platform_machine == 'aarch64' and python_version == '3.11'",
 ]
 solutions = [
     "shapely>=2.0.0",    # shapely for point and polygon data matching
     "lap>=0.5.12",  # for solution tracking linear assignment
-    # CLIP for similarity search auto-installs on first use via ultralytics.nn.text_model ()
-    "streamlit>=1.51.0; python_version >= '3.10'",    # for live inference on web browser, i.e `yolo streamlit-predict`
+    # CLIP for similarity search auto-installs on first use via rtap.nn.text_model ()
+    "streamlit>=1.51.0; python_version >= '3.10'",    # for live inference on web browser, i.e `rtap streamlit-predict`
     "streamlit>=1.29.0,<1.51.0; python_version < '3.10' and (platform_machine != 'aarch64' or platform_system != 'Linux')",
     "flask>=3.0.1",  # for similarity search solution
 ]
@@ -155,9 +154,9 @@ llm = [
     "openai>=2.0.0",
 ]
 logging = [
-    "wandb", # https://docs.ultralytics.com/integrations/weights-biases/
-    "tensorboard",  # https://docs.ultralytics.com/integrations/tensorboard/
-    "mlflow",  # https://docs.ultralytics.com/integrations/mlflow/
+    "wandb", # /integrations/weights-biases/
+    "tensorboard",  # /integrations/tensorboard/
+    "mlflow",  # /integrations/mlflow/
 ]
 extra = [
     "ipython", # interactive notebook
@@ -173,17 +172,16 @@ typing = [
 ]
 
 [project.scripts]
-yolo = "ultralytics.cfg:entrypoint"
-ultralytics = "ultralytics.cfg:entrypoint"
+rtap = "rtap.cfg:entrypoint"
 
 # Tools settings -------------------------------------------------------------------------------------------------------
 [tool.setuptools]  # configuration specific to the `setuptools` build backend.
-packages = { find = { where = ["."], include = ["ultralytics", "ultralytics.*"] } }
-# Tests included below for checking Conda builds in https://github.com/conda-forge/ultralytics-feedstock
-package-data = { "ultralytics" = ["**/*.yaml", "**/*.sh", "../tests/*.py"], "ultralytics.assets" = ["*.jpg"], "ultralytics.solutions.templates" = ["*.html"]}
+packages = { find = { where = ["."], include = ["rtap", "rtap.*"] } }
+# Tests included below for checking Conda builds in https://github.com/
+package-data = { "rtap" = ["**/*.yaml", "**/*.sh", "../tests/*.py"], "rtap.assets" = ["*.jpg"], "rtap.solutions.templates" = ["*.html"]}
 
 [tool.setuptools.dynamic]
-version = { attr = "ultralytics.__version__" }
+version = { attr = "rtap.__version__" }
 
 [tool.pytest.ini_options]
 addopts = "--doctest-modules --durations=30 --color=yes"
@@ -193,9 +191,9 @@ markers = [
 norecursedirs = [".git", "dist", "build"]
 
 [tool.coverage.run]
-source = ["ultralytics/"]
+source = ["rtap/"]
 data_file = "tests/.coverage"
-omit = ["ultralytics/utils/callbacks/*"]
+omit = ["rtap/utils/callbacks/*"]
 
 [tool.isort]
 line_length = 120

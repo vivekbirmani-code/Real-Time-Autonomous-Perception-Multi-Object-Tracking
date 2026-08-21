@@ -1,10 +1,10 @@
-# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+# RTAP — Real-Time Autonomous Perception (AGPL-3.0)
 
-# Builds ultralytics/ultralytics:latest-python-export image on DockerHub https://hub.docker.com/r/ultralytics/ultralytics
+# Builds rtap/rtap:latest-python-export image on DockerHub 
 # Full-featured image with export capabilities for YOLO model conversion
 
-# Build from lightweight Ultralytics Python image
-FROM ultralytics/ultralytics:latest-python
+# Build from lightweight RTAP Python image
+FROM rtap/rtap:latest-python
 
 # Install export-specific system packages
 # gnupg required for Edge TPU install
@@ -19,13 +19,13 @@ RUN uv pip install --system --no-cache -e ".[export]" \
     --extra-index-url https://download.pytorch.org/whl/cpu \
     --index-strategy unsafe-best-match && \
     uv pip install --system --no-cache paddlepaddle x2paddle && \
-    rm -rf tmp ~/.cache /root/.config/Ultralytics/persistent_cache.json
+    rm -rf tmp ~/.cache /root/.config/RTAP/persistent_cache.json
 
 # Usage --------------------------------------------------------------------------------------------------------------
 
-# Production builds: https://github.com/ultralytics/ultralytics/blob/main/.github/workflows/docker.yml
-# Example (build): t=ultralytics/ultralytics:latest-python-export && docker build -f docker/Dockerfile-python-export -t $t .
+# Production builds: 
+# Example (build): t=rtap/rtap:latest-python-export && docker build -f docker/Dockerfile-python-export -t $t .
 # Example (push): docker push $t
-# Example (pull): t=ultralytics/ultralytics:latest-python-export && docker pull $t
+# Example (pull): t=rtap/rtap:latest-python-export && docker pull $t
 # Example (run): docker run -it --ipc=host $t
 # Example (run-with-volume): docker run -it --ipc=host -v "$PWD/shared/datasets:/datasets" $t

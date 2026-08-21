@@ -1,4 +1,4 @@
-# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+# RTAP — Real-Time Autonomous Perception (AGPL-3.0)
 
 import contextlib
 import csv
@@ -16,13 +16,13 @@ import pytest
 import torch
 from PIL import Image
 
-import ultralytics.data.build as data_build
+import rtap.data.build as data_build
 from tests import CFG, MODEL, MODELS, SOURCE, SOURCES_LIST, TASK_MODEL_DATA
-from ultralytics import RTDETR, YOLO
-from ultralytics.cfg import get_cfg
-from ultralytics.data.build import build_dataloader, load_inference_source
-from ultralytics.data.utils import check_cls_dataset, check_det_dataset
-from ultralytics.utils import (
+from rtap import RTDETR, YOLO
+from rtap.cfg import get_cfg
+from rtap.data.build import build_dataloader, load_inference_source
+from rtap.data.utils import check_cls_dataset, check_det_dataset
+from rtap.utils import (
     ARM64,
     ASSETS,
     ASSETS_URL,
@@ -41,8 +41,8 @@ from ultralytics.utils import (
     checks,
     is_github_action_running,
 )
-from ultralytics.utils.downloads import download, safe_download
-from ultralytics.utils.torch_utils import TORCH_1_11, TORCH_1_13
+from rtap.utils.downloads import download, safe_download
+from rtap.utils.torch_utils import TORCH_1_11, TORCH_1_13
 
 
 def test_dataloader_caps_workers_to_batches():
@@ -110,7 +110,7 @@ def skip_rpi_semantic():
 
 def test_select_device(monkeypatch):
     """The same device string must resolve to the same GPU on every call, and the environment is never mutated."""
-    from ultralytics.utils import torch_utils
+    from rtap.utils import torch_utils
 
     set_calls = []
     monkeypatch.setattr(torch_utils.torch.cuda, "is_available", lambda: True)
@@ -120,7 +120,7 @@ def test_select_device(monkeypatch):
     monkeypatch.setattr(torch_utils, "get_gpu_info", lambda i: f"Mock GPU {i}, 1MiB")
     monkeypatch.delenv("CUDA_VISIBLE_DEVICES", raising=False)
     assert str(torch_utils.select_device("", verbose=False)) == "cuda:0"
-    assert not set_calls  # default '' request must never move the current device, e.g. diagnostics like check_yolo()
+    assert not set_calls  # default '' request must never move the current device, e.g. diagnostics like check_rtap()
     for _ in range(2):  # repeated calls are idempotent, e.g. Trainer.__init__ then final_eval, or predict() twice
         assert str(torch_utils.select_device("1", verbose=False)) == "cuda:1"
         with pytest.raises(ValueError):
@@ -148,7 +148,7 @@ def test_select_device(monkeypatch):
     assert str(torch_utils.select_device("3", verbose=False)) == "cuda:0"  # e.g. pods launched with CVD preset
     assert torch_utils.parse_device(torch_utils.parse_device("3")) == "0"  # idempotent: trainer + select_device parse
     # '-1' idle-GPU auto-selection searches only externally visible GPUs and translates physical ids to torch indices
-    from ultralytics.utils import autodevice
+    from rtap.utils import autodevice
 
     monkeypatch.setattr(autodevice.GPUInfo, "__init__", lambda self: self.__dict__.update(nvml_available=False))
     monkeypatch.setattr(
@@ -200,11 +200,11 @@ def test_model_load_remaps_cls_head_by_names():
     """Test class-name remap is limited to closed-set class-logit heads."""
     from types import SimpleNamespace
 
-    from ultralytics.models.yolo.detect.train import DetectionTrainer
-    from ultralytics.models.yolo.obb.train import OBBTrainer
-    from ultralytics.models.yolo.pose.train import PoseTrainer
-    from ultralytics.models.yolo.segment.train import SegmentationTrainer
-    from ultralytics.nn.tasks import DetectionModel, OBBModel, PoseModel, SegmentationModel, YOLOEModel
+    from rtap.models.yolo.detect.train import DetectionTrainer
+    from rtap.models.yolo.obb.train import OBBTrainer
+    from rtap.models.yolo.pose.train import PoseTrainer
+    from rtap.models.yolo.segment.train import SegmentationTrainer
+    from rtap.nn.tasks import DetectionModel, OBBModel, PoseModel, SegmentationModel, YOLOEModel
 
     src = DetectionModel("yolo26n.yaml", nc=3, verbose=False)
     tgt = DetectionModel("yolo26n.yaml", nc=2, verbose=False)
@@ -234,7 +234,7 @@ def test_model_load_remaps_cls_head_by_names():
 
 def test_model_profile():
     """Test profiling of the YOLO model with `profile=True` to assess performance and resource usage."""
-    from ultralytics.nn.tasks import DetectionModel
+    from rtap.nn.tasks import DetectionModel
 
     model = DetectionModel()  # build model
     im = torch.randn(1, 3, 64, 64)  # requires min imgsz=64
@@ -317,7 +317,7 @@ def test_predict_visualize(model):
 
 def test_load_tensor_uint8():
     """Test that tensor normalization supports uint8 while preserving floating-point epsilon tolerance."""
-    from ultralytics.data.loaders import LoadTensor
+    from rtap.data.loaders import LoadTensor
 
     loaded = LoadTensor(torch.full((1, 3, 32, 32), 255, dtype=torch.uint8)).im0
     assert loaded.dtype == torch.float32 and loaded.max() == 1
@@ -351,7 +351,7 @@ def test_predict_gray_and_4ch(tmp_path):
 
 def test_predict_ndarray_channels():
     """Test NumPy channel normalization for grayscale and color models."""
-    from ultralytics.data.loaders import LoadPilAndNumpy
+    from rtap.data.loaders import LoadPilAndNumpy
 
     model = YOLO(MODEL)  # default 3-channel model
     gray = np.asarray(Image.open(SOURCE).convert("L"))  # genuine 2D (H, W) uint8 array
@@ -404,9 +404,9 @@ def test_youtube():
 
 def test_track_second_association_indices():
     """Low-confidence detections matched in second association keep full detection-set indices."""
-    from ultralytics.engine.results import Boxes
-    from ultralytics.trackers.byte_tracker import BYTETracker
-    from ultralytics.utils import ROOT, YAML, IterableSimpleNamespace
+    from rtap.engine.results import Boxes
+    from rtap.trackers.byte_tracker import BYTETracker
+    from rtap.utils import ROOT, YAML, IterableSimpleNamespace
 
     args = IterableSimpleNamespace(**{**YAML.load(ROOT / "cfg/trackers/bytetrack.yaml"), "fuse_score": False})
     tracker = BYTETracker(args)
@@ -422,9 +422,9 @@ def test_track_split_detections_degenerate_boxes():
     """`_split_detections` must drop zero/negative-dimension boxes from both confidence partitions while keeping every
     valid detection's index into the full detection-set space (later assigned to `track.idx`).
     """
-    from ultralytics.engine.results import Boxes
-    from ultralytics.trackers.byte_tracker import BYTETracker
-    from ultralytics.utils import ROOT, YAML, IterableSimpleNamespace
+    from rtap.engine.results import Boxes
+    from rtap.trackers.byte_tracker import BYTETracker
+    from rtap.utils import ROOT, YAML, IterableSimpleNamespace
 
     args = IterableSimpleNamespace(**YAML.load(ROOT / "cfg/trackers/bytetrack.yaml"))
     tracker = BYTETracker(args)
@@ -444,9 +444,9 @@ def test_track_split_detections_degenerate_boxes():
 @pytest.mark.parametrize("tracker_type", ["bytetrack", "fasttrack"])
 def test_track_second_association_low_conf_keeps_id(tracker_type):
     """Low-confidence detection is recovered by the second association under the default fuse_score=True."""
-    from ultralytics.engine.results import Boxes
-    from ultralytics.trackers.track import TRACKER_MAP
-    from ultralytics.utils import ROOT, YAML, IterableSimpleNamespace
+    from rtap.engine.results import Boxes
+    from rtap.trackers.track import TRACKER_MAP
+    from rtap.utils import ROOT, YAML, IterableSimpleNamespace
 
     args = IterableSimpleNamespace(**YAML.load(ROOT / f"cfg/trackers/{tracker_type}.yaml"))  # default fuse_score=True
     tracker = TRACKER_MAP[tracker_type](args)
@@ -464,9 +464,9 @@ def test_track_second_association_low_conf_keeps_id(tracker_type):
 @pytest.mark.parametrize("tracker_type", ["botsort", "deepocsort", "tracktrack"])
 def test_track_reid_auto_user_detections(tracker_type):
     """Native ReID (model='auto') must degrade to motion-only with user-supplied detections, not encode the raw frame."""
-    from ultralytics.engine.results import Boxes
-    from ultralytics.trackers.track import TRACKER_MAP
-    from ultralytics.utils import ROOT, YAML, IterableSimpleNamespace
+    from rtap.engine.results import Boxes
+    from rtap.trackers.track import TRACKER_MAP
+    from rtap.utils import ROOT, YAML, IterableSimpleNamespace
 
     cfg = {**YAML.load(ROOT / f"cfg/trackers/{tracker_type}.yaml"), "with_reid": True, "model": "auto"}
     tracker = TRACKER_MAP[tracker_type](IterableSimpleNamespace(**cfg))
@@ -481,7 +481,7 @@ def test_reid_invalid_crops():
     """Test ReID skips out-of-bounds detection crops while preserving feature alignment."""
     from types import SimpleNamespace
 
-    from ultralytics.trackers.utils.reid import ReID
+    from rtap.trackers.utils.reid import ReID
 
     encoder = ReID.__new__(ReID)
     encoder.is_pt = True
@@ -504,7 +504,7 @@ def test_track_stream(model, tmp_path, solution_assets):
         "yolo26n-depth.pt",
     }:  # classification, semantic, and depth not supported
         return
-    from ultralytics.trackers.track import TRACKER_MAP
+    from rtap.trackers.track import TRACKER_MAP
 
     video_url = solution_assets("track_video")
     model = YOLO(model)
@@ -578,7 +578,7 @@ def test_val_save_txt_pose(tmp_path):
 
 def test_pose_metrics_curves():
     """Test that pose curve labels contain four unique box and pose series."""
-    from ultralytics.utils.metrics import PoseMetrics
+    from rtap.utils.metrics import PoseMetrics
 
     curves = PoseMetrics().curves
     assert len(curves) == len(set(curves)) == 8
@@ -601,9 +601,9 @@ def test_train_multi():
 
 def test_normalize_platform_uri():
     """Test Platform web URLs are rewritten to ul:// URIs so datasets/models load directly from a pasted URL."""
-    from ultralytics.utils.checks import normalize_platform_uri
+    from rtap.utils.checks import normalize_platform_uri
 
-    base = "https://platform.ultralytics.com/glenn-jocher"
+    base = "/glenn-jocher"
     assert normalize_platform_uri(f"{base}/datasets/coco8") == "ul://glenn-jocher/datasets/coco8"
     assert normalize_platform_uri(f"{base}/project/model/") == "ul://glenn-jocher/project/model"
     assert normalize_platform_uri("coco8.yaml") == "coco8.yaml"  # non-Platform inputs unchanged
@@ -611,7 +611,7 @@ def test_normalize_platform_uri():
 
 def test_convert_signed_ndjson(monkeypatch):
     """Test signed NDJSON URLs are converted before dataset YAML validation."""
-    from ultralytics.data import converter, utils
+    from rtap.data import converter, utils
 
     captured = []
 
@@ -635,7 +635,7 @@ def test_ndjson_conversion_concurrency_and_resume(monkeypatch, tmp_path, task):
 
     import aiohttp
 
-    from ultralytics.data import converter
+    from rtap.data import converter
 
     counts, failures, conversions, count_lock = {}, set(), 0, threading.Lock()
 
@@ -725,7 +725,7 @@ def test_ndjson_conversion_concurrency_and_resume(monkeypatch, tmp_path, task):
     assert sum(counts.values()) == 2
     if task == "classify":
         assert check_cls_dataset(results[0])["nc"] == 2
-        from ultralytics.data import dataset as dataset_module
+        from rtap.data import dataset as dataset_module
 
         monkeypatch.setattr(dataset_module, "TORCHVISION_0_18", False)
         args = copy(DEFAULT_CFG)
@@ -762,8 +762,8 @@ def test_platform_job_transport(monkeypatch, tmp_path):
     """Test configurable Platform transport with an existing local checkpoint."""
     from types import SimpleNamespace
 
-    from ultralytics import SETTINGS, cfg
-    from ultralytics.utils.callbacks import platform
+    from rtap import SETTINGS, cfg
+    from rtap.utils.callbacks import platform
 
     monkeypatch.setattr(cfg, "TESTS_RUNNING", False)
     monkeypatch.setitem(SETTINGS, "runs_dir", str(tmp_path))
@@ -834,7 +834,7 @@ def test_all_model_yamls():
             YOLO(m.name)
 
 
-@pytest.mark.skipif(WINDOWS, reason="Windows slow CI export bug https://github.com/ultralytics/ultralytics/pull/16003")
+@pytest.mark.skipif(WINDOWS, reason="Windows slow CI export bug ")
 def test_workflow(isolated_model):
     """Test the complete workflow including training, validation, prediction, and exporting."""
     model = YOLO(isolated_model)
@@ -888,7 +888,7 @@ def test_results(model: str, tmp_path, solution_assets):
         r = r.to(device="cpu", dtype=torch.float32)
         r.save_txt(txt_file=tmp_path / "runs/tests/label.txt", save_conf=True)
         r.save_crop(save_dir=tmp_path / "runs/tests/crops/")
-        r.to_df(decimals=3)  # Align to_ methods: https://docs.ultralytics.com/modes/predict/#working-with-results
+        r.to_df(decimals=3)  # Align to_ methods: /modes/predict/#working-with-results
         r.to_csv()
         r.to_json(normalize=True)
         r.plot(pil=True, save=True, filename=tmp_path / "results_plot_save.jpg")
@@ -898,7 +898,7 @@ def test_results(model: str, tmp_path, solution_assets):
 
 def test_results_plot_without_boxes():
     """Test that plotting a masks-only Results (boxes=None) does not raise an AttributeError."""
-    from ultralytics.engine.results import Results
+    from rtap.engine.results import Results
 
     orig_img = np.zeros((640, 640, 3), dtype=np.uint8)
     masks = torch.zeros((2, 640, 640), dtype=torch.float32)
@@ -910,7 +910,7 @@ def test_results_plot_without_boxes():
 
 def test_results_depth_field():
     """A depth array becomes a DepthMap that survives the .cpu().numpy() chain."""
-    from ultralytics.engine.results import DepthMap, Results
+    from rtap.engine.results import DepthMap, Results
 
     img = np.zeros((20, 24, 3), dtype=np.uint8)
     depth = np.random.rand(20, 24).astype(np.float32)
@@ -924,7 +924,7 @@ def test_results_depth_field():
 
 def test_results_depth_none_summary_len_and_update():
     """Depth-only Results: None passthrough, empty summary, __len__ counts the map, update() wraps arrays."""
-    from ultralytics.engine.results import DepthMap, Results
+    from rtap.engine.results import DepthMap, Results
 
     img = np.zeros((8, 8, 3), dtype=np.uint8)
     assert Results(orig_img=img, path="x.jpg", names={}, depth=None).depth is None
@@ -938,7 +938,7 @@ def test_results_depth_none_summary_len_and_update():
 
 def test_results_plot_with_depth():
     """Results.plot() with a depth map blends the colorized depth heatmap over the image."""
-    from ultralytics.engine.results import Results
+    from rtap.engine.results import Results
 
     img = np.zeros((24, 24, 3), dtype=np.uint8)
     depth = np.random.rand(24, 24).astype(np.float32)
@@ -949,7 +949,7 @@ def test_results_plot_with_depth():
 
 def test_annotator_depth_map():
     """Annotator.depth_map colorizes a depth array, including the all-zero (no valid pixels) case."""
-    from ultralytics.utils.plotting import Annotator
+    from rtap.utils.plotting import Annotator
 
     ann = Annotator(np.zeros((32, 32, 3), dtype=np.uint8))
     ann.depth_map(np.random.rand(32, 32).astype(np.float32))
@@ -961,8 +961,8 @@ def test_annotator_depth_map():
 
 def test_annotator_tensor_image():
     """Annotator accepts tensor images and matches Results.plot compositing pixels."""
-    from ultralytics.engine.results import Results
-    from ultralytics.utils.plotting import Annotator
+    from rtap.engine.results import Results
+    from rtap.utils.plotting import Annotator
 
     image = torch.zeros((16, 16, 3), dtype=torch.uint8)
     masks = torch.ones((1, 16, 16), dtype=torch.bool)
@@ -976,7 +976,7 @@ def test_annotator_tensor_image():
 
 def test_results_update_probs():
     """Test that Results.update(probs=...) wraps the tensor in Probs like the sibling attributes."""
-    from ultralytics.engine.results import Probs, Results
+    from rtap.engine.results import Probs, Results
 
     orig_img = np.zeros((32, 32, 3), dtype=np.uint8)
     r = Results(orig_img, path="image.jpg", names={i: f"c{i}" for i in range(5)}, probs=torch.rand(5))
@@ -1020,8 +1020,8 @@ def test_labels_and_crops(tmp_path):
 
 def test_data_utils(tmp_path):
     """Test data utility functions including auto-splitting and zip archiving."""
-    from ultralytics.data.split import autosplit
-    from ultralytics.utils.downloads import zip_directory
+    from rtap.data.split import autosplit
+    from rtap.utils.downloads import zip_directory
 
     images_dir = tmp_path / "coco8/images/val"
     images_dir.mkdir(parents=True)
@@ -1041,7 +1041,7 @@ def test_data_utils(tmp_path):
 
     # polygons2masks_overlap must not overflow uint8 on the transient `masks + mask` sum (reaches 2 * i + 1):
     # with more than 128 overlapping instances every instance must keep a distinct index in the overlap mask
-    from ultralytics.data.utils import polygons2masks_overlap
+    from rtap.data.utils import polygons2masks_overlap
 
     segments = [
         np.array([[150 - s, 150 - s], [150 + s, 150 - s], [150 + s, 150 + s], [150 - s, 150 + s]], dtype=np.float32)
@@ -1103,7 +1103,7 @@ def test_safe_download_skips_unsafe_tar_members(tmp_path):
 @pytest.mark.skipif(not ONLINE, reason="environment is offline")
 def test_data_converter(tmp_path):
     """Test dataset conversion functions from COCO to YOLO format and class mappings."""
-    from ultralytics.data.converter import coco80_to_coco91_class, convert_coco
+    from rtap.data.converter import coco80_to_coco91_class, convert_coco
 
     cached_file = DATASETS_DIR / "annotations" / "instances_val2017.json"
     if cached_file.exists():
@@ -1118,7 +1118,7 @@ def test_data_converter(tmp_path):
 
 def test_data_annotator(tmp_path):
     """Test automatic annotation of data using detection and segmentation models."""
-    from ultralytics.data.annotator import auto_annotate
+    from rtap.data.annotator import auto_annotate
 
     auto_annotate(
         ASSETS,
@@ -1130,7 +1130,7 @@ def test_data_annotator(tmp_path):
 
 def test_events():
     """Test event sending functionality."""
-    from ultralytics.utils.events import Events
+    from rtap.utils.events import Events
 
     events = Events()
     events.enabled = True
@@ -1140,8 +1140,8 @@ def test_events():
 
 
 def test_cfg_init():
-    """Test configuration initialization utilities from the 'ultralytics.cfg' module."""
-    from ultralytics.cfg import check_dict_alignment, copy_default_cfg, smart_value
+    """Test configuration initialization utilities from the 'rtap.cfg' module."""
+    from rtap.cfg import check_dict_alignment, copy_default_cfg, smart_value
 
     with contextlib.suppress(SyntaxError):
         check_dict_alignment({"a": 1}, {"b": 2})
@@ -1196,9 +1196,9 @@ def test_depth_calibration_checkpoint_provenance(tmp_path):
     """Depth calibration persists the selected transform and sample count with the checkpoint."""
     from copy import deepcopy
 
-    from ultralytics.models.yolo.depth.calibrate import _depth_head, calibrate_checkpoint
-    from ultralytics.nn.tasks import DepthModel
-    from ultralytics.utils.patches import torch_load
+    from rtap.models.yolo.depth.calibrate import _depth_head, calibrate_checkpoint
+    from rtap.nn.tasks import DepthModel
+    from rtap.utils.patches import torch_load
 
     torch.manual_seed(0)
     model = DepthModel("yolo26n-depth.yaml", verbose=False)
@@ -1232,9 +1232,9 @@ def test_depth_trainer_records_portable_calibration_split(tmp_path, monkeypatch,
     """Calibration provenance records local splits without rejecting external validation paths."""
     from types import SimpleNamespace
 
-    from ultralytics.models.yolo import detect
-    from ultralytics.models.yolo.depth import calibrate
-    from ultralytics.models.yolo.depth.train import DepthTrainer
+    from rtap.models.yolo import detect
+    from rtap.models.yolo.depth import calibrate
+    from rtap.models.yolo.depth.train import DepthTrainer
 
     dataset_root = tmp_path / "private" / "dataset"
     validation_path = (tmp_path / "shared" if external else dataset_root) / "images" / "val"
@@ -1266,7 +1266,7 @@ def test_depth_trainer_records_portable_calibration_split(tmp_path, monkeypatch,
 
 def test_depth_dataset_ignores_unreadable_targets(tmp_path):
     """Drop unreadable depth maps and accept single-class mode with empty class labels."""
-    from ultralytics.data.dataset import DepthDataset
+    from rtap.data.dataset import DepthDataset
 
     images, depth = tmp_path / "images" / "train", tmp_path / "depth" / "train"
     images.mkdir(parents=True)
@@ -1283,8 +1283,8 @@ def test_depth_dataset_ignores_unreadable_targets(tmp_path):
 
 
 def test_utils_init():
-    """Test initialization utilities in the Ultralytics library."""
-    from ultralytics.utils import get_ubuntu_version, is_github_action_running
+    """Test initialization utilities in the RTAP library."""
+    from rtap.utils import get_ubuntu_version, is_github_action_running
 
     get_ubuntu_version()
     is_github_action_running()
@@ -1298,14 +1298,14 @@ def test_utils_checks(monkeypatch):
             return "1.0"
         raise checks.metadata.PackageNotFoundError
 
-    checks.check_yolov5u_filename("yolov5n.pt")
+    checks.check_rtapv5u_filename("yolov5n.pt")
     checks.check_requirements("numpy")  # check requirements.txt
     checks.check_imgsz([600, 600], max_dim=1)
     with pytest.raises(ValueError):
         checks.check_imgsz("640x480")  # malformed imgsz string raises a helpful ValueError, not a raw SyntaxError
     checks.check_imshow(warn=True)
     checks.check_suffix("https://example.com/model.pt?token=abc", ".pt")
-    checks.check_version("ultralytics", "8.0.0")
+    checks.check_version("rtap", "8.0.0")
     # parse_version must pad to at least 3 components and keep all segments so any version pair compares correctly
     assert checks.parse_version("2") == (2, 0, 0)
     assert checks.parse_version("4.13.0.92") == (4, 13, 0, 92)
@@ -1338,16 +1338,16 @@ def test_utils_checks(monkeypatch):
 
 @pytest.mark.skipif(WINDOWS, reason="Windows profiling is extremely slow (cause unknown)")
 def test_utils_benchmarks():
-    """Benchmark model performance using 'ProfileModels' from 'ultralytics.utils.benchmarks'."""
-    from ultralytics.utils.benchmarks import ProfileModels
+    """Benchmark model performance using 'ProfileModels' from 'rtap.utils.benchmarks'."""
+    from rtap.utils.benchmarks import ProfileModels
 
     ProfileModels(["yolo26n.yaml"], imgsz=32, min_time=1, num_timed_runs=3, num_warmup_runs=1).run()
 
 
 def test_utils_torchutils():
     """Test Torch utility functions including profiling and FLOP calculations."""
-    from ultralytics.nn.modules.conv import Conv
-    from ultralytics.utils.torch_utils import profile_ops, time_sync
+    from rtap.nn.modules.conv import Conv
+    from rtap.utils.torch_utils import profile_ops, time_sync
 
     x = torch.randn(1, 64, 20, 20)
     m = Conv(64, 64, k=1, s=2)
@@ -1360,7 +1360,7 @@ def test_rtdetr_remap_cls_by_names():
     """Test RT-DETR decoder cls-head remap (direct-name match, unmatched, denoising partial transfer)."""
     from types import SimpleNamespace
 
-    from ultralytics.nn.tasks import RTDETRDetectionModel
+    from rtap.nn.tasks import RTDETRDetectionModel
 
     # Source has 2 classes (person, bird), target has 3 (person, bird, airplane). Target 'airplane' has no source.
     dst_state = {
@@ -1389,9 +1389,9 @@ def test_rtdetr_remap_cls_by_names():
 @pytest.mark.parametrize("nc", [1, 3])
 def test_semantic_loss_all_ignore(nc):
     """SemanticSegmentationLoss must stay finite when the whole batch is ignore (255), e.g. unlabeled/void frames."""
-    from ultralytics.cfg import get_cfg
-    from ultralytics.nn.tasks import SemanticSegmentationModel
-    from ultralytics.utils.loss import SemanticSegmentationLoss
+    from rtap.cfg import get_cfg
+    from rtap.nn.tasks import SemanticSegmentationModel
+    from rtap.utils.loss import SemanticSegmentationLoss
 
     model = SemanticSegmentationModel(cfg="yolo26-sem.yaml", nc=nc, verbose=False)
     model.args = get_cfg()
@@ -1419,7 +1419,7 @@ class _DepthLossModel(torch.nn.Module):
 
 def _depth_loss_for_scaled_pred(lam, scale):
     """Return the SILog-only depth loss for a prediction with perfect structure but wrong global scale."""
-    from ultralytics.utils.loss import DepthLoss26
+    from rtap.utils.loss import DepthLoss26
 
     crit = DepthLoss26(_DepthLossModel(dlam=lam, dgrad=0.0))  # SILog only
     gt = torch.rand(2, 1, 16, 16) * 5 + 1.0
@@ -1440,7 +1440,7 @@ def test_v26_depth_loss_lower_lambda_penalizes_scale_error_more():
 
 def test_utils_ops():
     """Test utility operations for coordinate transformations and normalizations."""
-    from ultralytics.utils.ops import (
+    from rtap.utils.ops import (
         ltwh2xywh,
         ltwh2xyxy,
         make_divisible,
@@ -1489,7 +1489,7 @@ def test_utils_ops():
 
 def test_nms_end2end_classes_before_max_det():
     """The end-to-end NMS branch must filter classes before truncating to max_det, like the NMS-based branch."""
-    from ultralytics.utils.nms import non_max_suppression
+    from rtap.utils.nms import non_max_suppression
 
     # (2, 4, 6) end2end predictions sorted by descending confidence: [x1, y1, x2, y2, conf, cls]
     pred = torch.tensor(
@@ -1510,7 +1510,7 @@ def test_nms_end2end_classes_before_max_det():
 
 def test_process_mask_empty():
     """Process_mask/process_mask_native/scale_masks must handle 0 detections without crashing."""
-    from ultralytics.utils import ops
+    from rtap.utils import ops
 
     protos, coeffs, bboxes = torch.rand(32, 160, 160), torch.zeros(0, 32), torch.zeros(0, 4)
     assert ops.process_mask(protos, coeffs, bboxes, (640, 640), upsample=True).shape == (0, 640, 640)
@@ -1521,7 +1521,7 @@ def test_process_mask_empty():
 
 def test_utils_files(tmp_path):
     """Test file handling utilities including file age, date, and paths with spaces."""
-    from ultralytics.utils.files import file_age, file_date, get_latest_run, increment_path, spaces_in_path
+    from rtap.utils.files import file_age, file_date, get_latest_run, increment_path, spaces_in_path
 
     file_age(SOURCE)
     file_date(SOURCE)
@@ -1546,11 +1546,11 @@ def test_utils_patches_torch_save(tmp_path):
     """Test torch_save backoff when _torch_save raises RuntimeError."""
     from unittest.mock import MagicMock, patch
 
-    from ultralytics.utils.patches import torch_save
+    from rtap.utils.patches import torch_save
 
     mock = MagicMock(side_effect=RuntimeError)
 
-    with patch("ultralytics.utils.patches._torch_save", new=mock), pytest.raises(RuntimeError):
+    with patch("rtap.utils.patches._torch_save", new=mock), pytest.raises(RuntimeError):
         torch_save(torch.zeros(1), tmp_path / "test.pt")
 
     assert mock.call_count == 4, "torch_save was not attempted the expected number of times"
@@ -1558,7 +1558,7 @@ def test_utils_patches_torch_save(tmp_path):
 
 def test_nn_modules_conv():
     """Test Convolutional Neural Network modules including CBAM, Conv2, and ConvTranspose."""
-    from ultralytics.nn.modules.conv import CBAM, Conv2, ConvTranspose, DWConvTranspose2d, Focus
+    from rtap.nn.modules.conv import CBAM, Conv2, ConvTranspose, DWConvTranspose2d, Focus
 
     c1, c2 = 8, 16  # input and output channels
     x = torch.zeros(4, c1, 10, 10)  # BCHW
@@ -1577,7 +1577,7 @@ def test_nn_modules_conv():
 
 def test_nn_modules_block():
     """Test various neural network block modules."""
-    from ultralytics.nn.modules.block import C1, C3TR, BottleneckCSP, C3Ghost, C3x
+    from rtap.nn.modules.block import C1, C3TR, BottleneckCSP, C3Ghost, C3x
 
     c1, c2 = 8, 16  # input and output channels
     x = torch.zeros(4, c1, 10, 10)  # BCHW
@@ -1592,7 +1592,7 @@ def test_nn_modules_block():
 
 def test_nn_detect_head_export_clamps_max_det():
     """Detect export postprocess should not request more candidates than available anchors."""
-    from ultralytics.nn.modules.head import Detect
+    from rtap.nn.modules.head import Detect
 
     head = Detect(nc=2, ch=(16,))
     head.export = True
@@ -1608,7 +1608,7 @@ def _depth_head_feats():
 
 def test_nn_depth_head_export_upsamples_to_input():
     """Depth export upsamples x4 to input resolution; inference returns native head resolution."""
-    from ultralytics.nn.modules.head import Depth
+    from rtap.nn.modules.head import Depth
 
     head = Depth(c_mid=32, ch=(32, 64, 128)).eval()
     for fmt in ("onnx", "coreml"):
@@ -1620,7 +1620,7 @@ def test_nn_depth_head_export_upsamples_to_input():
 
 def test_nn_depth_head_no_dead_parameters():
     """Every head parameter receives gradient — DDP then needs no find_unused_parameters."""
-    from ultralytics.nn.modules.head import Depth
+    from rtap.nn.modules.head import Depth
 
     head = Depth(c_mid=32, ch=(32, 64, 128)).train()
     head(_depth_head_feats())["depth"].sum().backward()
@@ -1645,7 +1645,7 @@ def image():
 )
 def test_classify_transforms_train(image, auto_augment, erasing, force_color_jitter):
     """Test classification transforms during training with various augmentations."""
-    from ultralytics.data.augment import classify_augmentations
+    from rtap.data.augment import classify_augmentations
 
     transform = classify_augmentations(
         size=224,
@@ -1719,7 +1719,7 @@ def test_model_embeddings():
 
 def test_process_mask_native_chunked():
     """Chunked native upsampling is identical to upsampling all masks at once."""
-    from ultralytics.utils import ops
+    from rtap.utils import ops
 
     torch.manual_seed(0)
     protos, masks_in = torch.randn(32, 160, 160), torch.randn(70, 32)
@@ -1755,7 +1755,7 @@ def test_yolo_world():
     )
 
     # test WorWorldTrainerFromScratch
-    from ultralytics.models.yolo.world.train_world import WorldTrainerFromScratch
+    from rtap.models.yolo.world.train_world import WorldTrainerFromScratch
 
     model = YOLO("yolov8s-worldv2.yaml")  # no YOLO11n-world model yet
     model.train(
@@ -1783,8 +1783,8 @@ def test_yoloe(tmp_path):
     model.set_classes(["person", "bus"])
     model(SOURCE, conf=0.01)
 
-    from ultralytics import YOLOE
-    from ultralytics.models.yolo.yoloe import YOLOEVPSegPredictor
+    from rtap import YOLOE
+    from rtap.models.yolo.yoloe import YOLOEVPSegPredictor
 
     # visual-prompts
     visuals = {
@@ -1805,7 +1805,7 @@ def test_yoloe(tmp_path):
     model.val(data="coco128-seg.yaml", load_vp=True, imgsz=32)
 
     # Train, fine-tune
-    from ultralytics.models.yolo.yoloe import YOLOEPESegTrainer, YOLOESegTrainerFromScratch
+    from rtap.models.yolo.yoloe import YOLOEPESegTrainer, YOLOESegTrainerFromScratch
 
     model = YOLOE("yoloe-11s-seg.pt")
     model.train(
@@ -1842,7 +1842,7 @@ def test_yoloe_visual_prompt_verbose_false(capfd):
     """Verify that YOLOE visual prompting respects verbose=False."""
     model = YOLO(WEIGHTS_DIR / "yoloe-11s-seg.pt")
 
-    from ultralytics.models.yolo.yoloe import YOLOEVPSegPredictor
+    from rtap.models.yolo.yoloe import YOLOEVPSegPredictor
 
     visuals = {
         "bboxes": np.array([[221.52, 405.8, 344.98, 857.54]]),
@@ -1863,7 +1863,7 @@ def test_yoloe_visual_prompt_verbose_false(capfd):
     captured = capfd.readouterr()
     output = captured.out + captured.err
 
-    assert "Ultralytics" not in output
+    assert "RTAP" not in output
 
 
 def test_yolov10():

@@ -1,6 +1,7 @@
-# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+# RTAP — Real-Time Autonomous Perception (AGPL-3.0)
 
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -10,29 +11,43 @@ import pytest
 from PIL import Image
 
 from tests import CUDA_DEVICE_COUNT, CUDA_IS_AVAILABLE, MODELS, TASK_MODEL_DATA
-from ultralytics.utils import ARM64, ASSETS, DATASETS_DIR, IS_RASPBERRYPI, LINUX, WEIGHTS_DIR, checks
-from ultralytics.utils.torch_utils import TORCH_1_11, TORCH_VERSION
+from rtap.utils import ARM64, ASSETS, DATASETS_DIR, IS_RASPBERRYPI, LINUX, WEIGHTS_DIR, checks
+from rtap.utils.torch_utils import TORCH_1_11, TORCH_VERSION
 
 
 def run(cmd: str) -> None:
     """Execute a shell command using subprocess."""
-    subprocess.run(cmd.split(), check=True)
+    path_keys = {"model", "source", "data", "project", "name", "weights_dir", "datasets_dir"}
+    args = ["rtap"]
+    rest = cmd.removeprefix("rtap ").strip()
+    for chunk in re.split(r"\s+(?=\w+=)", rest):
+        if "=" not in chunk:
+            args.extend(chunk.split())
+            continue
+        key, value = chunk.split("=", 1)
+        if key in path_keys or " " not in value:
+            args.append(f"{key}={value}")
+            continue
+        first, *extras = value.split()
+        args.append(f"{key}={first}")
+        args.extend(extras)
+    subprocess.run(args, check=True)
 
 
 def test_special_modes() -> None:
     """Test various special command-line modes for YOLO functionality."""
-    run("yolo help")
-    run("yolo checks")
-    run("yolo version")
-    run("yolo settings reset")
-    run(f"yolo settings weights_dir={WEIGHTS_DIR} datasets_dir={DATASETS_DIR}")
-    run("yolo cfg")
+    run("rtap help")
+    run("rtap checks")
+    run("rtap version")
+    run("rtap settings reset")
+    run(f"rtap settings weights_dir={WEIGHTS_DIR} datasets_dir={DATASETS_DIR}")
+    run("rtap cfg")
 
 
 @pytest.mark.parametrize("api_key", ["legacy_api_key", "ul_" + "a" * 40])
 def test_settings_migration(tmp_path: Path, api_key: str) -> None:
     """Verify schema migration preserves user settings and only retains Platform API keys."""
-    from ultralytics.utils import SettingsManager
+    from rtap.utils import SettingsManager
 
     settings_file = tmp_path / "settings.json"
     settings_file.write_text(
@@ -57,7 +72,7 @@ def test_platform_login(monkeypatch) -> None:
     """Verify Platform login saves valid keys and logout removes them."""
     import requests
 
-    from ultralytics import cfg
+    from rtap import cfg
 
     class Response:
         status_code = 200
@@ -76,10 +91,10 @@ def test_cli_imports_defer_torchvision() -> None:
     """Verify startup imports do not load torchvision or SAM3 geometry."""
     code = (
         "import sys; "
-        "from ultralytics import YOLO; "
-        "from ultralytics.models.sam import Predictor; "
+        "from rtap import YOLO; "
+        "from rtap.models.sam import Predictor; "
         "assert 'torchvision' not in sys.modules; "
-        "assert 'ultralytics.models.sam.sam3.geometry_encoders' not in sys.modules"
+        "assert 'rtap.models.sam.sam3.geometry_encoders' not in sys.modules"
     )
     subprocess.run([sys.executable, "-c", code], check=True)
 
@@ -88,14 +103,14 @@ def test_cli_imports_defer_torchvision() -> None:
 @pytest.mark.skipif(IS_RASPBERRYPI, reason="Edge devices not intended for training")
 def test_train(task: str, model: str, data: str) -> None:
     """Test YOLO training for different tasks, models, and datasets."""
-    run(f"yolo train {task} model={model} data={data} imgsz=32 epochs=1 cache=disk")
+    run(f"rtap train {task} model={model} data={data} imgsz=32 epochs=1 cache=disk")
 
 
 @pytest.mark.parametrize("task,model,data", TASK_MODEL_DATA)
 def test_val(task: str, model: str, data: str) -> None:
     """Test YOLO validation process for specified task, model, and data using a shell command."""
     for end2end in (False, True):
-        run(f"yolo val {task} model={model} data={data} imgsz=32 end2end={end2end} max_det=100 agnostic_nms")
+        run(f"rtap val {task} model={model} data={data} imgsz=32 end2end={end2end} max_det=100 agnostic_nms")
 
 
 @pytest.mark.parametrize("task,model,data", TASK_MODEL_DATA)
@@ -108,12 +123,12 @@ def test_predict(task: str, model: str, data: str) -> None:
 @pytest.mark.parametrize("model", MODELS)
 def test_export(model: str, tmp_path: Path) -> None:
     """Test exporting a YOLO model to TorchScript format."""
-    from ultralytics.utils.downloads import attempt_download_asset
+    from rtap.utils.downloads import attempt_download_asset
 
     isolated = tmp_path / model
     shutil.copy(Path(attempt_download_asset(model)), isolated)
     for end2end in (False, True):
-        run(f"yolo export model={isolated} format=torchscript imgsz=32 end2end={end2end} max_det=100")
+        run(f"rtap export model={isolated} format=torchscript imgsz=32 end2end={end2end} max_det=100")
 
 
 @pytest.mark.parametrize(
@@ -127,7 +142,7 @@ def test_export(model: str, tmp_path: Path) -> None:
 )
 def test_distill(task: str, data: str, student: str, teacher: Path) -> None:
     """Test YOLO knowledge distillation training via CLI for supported tasks."""
-    run(f"yolo train {task} model={student} distill_model={teacher} data={data} imgsz=32 epochs=1")
+    run(f"rtap train {task} model={student} distill_model={teacher} data={data} imgsz=32 epochs=1")
 
 
 @pytest.mark.skipif(not TORCH_1_11, reason="RTDETR requires torch>=1.11")
@@ -136,10 +151,10 @@ def test_distill(task: str, data: str, student: str, teacher: Path) -> None:
     reason="RTDETR CPU training produces NaN losses with JetPack 5 torch 2.1.0a0",
 )
 def test_rtdetr(task: str = "detect", model: Path = WEIGHTS_DIR / "rtdetr-l.pt", data: str = "coco8.yaml") -> None:
-    """Test the RTDETR functionality within Ultralytics for detection tasks using specified model and data."""
+    """Test the RTDETR functionality within RTAP for detection tasks using specified model and data."""
     # Add comma and spaces to test CLI arg cleanup.
-    run(f"yolo predict {task} model={model} source={ASSETS / 'bus.jpg'} imgsz=160 save")
-    run(f"yolo train {task} model={model} data={data} --imgsz= 160 epochs =1, cache = disk")
+    run(f"rtap predict {task} model={model} source={ASSETS / 'bus.jpg'} imgsz=160 save")
+    run(f"rtap train {task} model={model} data={data} --imgsz= 160 epochs =1, cache = disk")
 
 
 @pytest.mark.skipif(IS_RASPBERRYPI, reason="Edge devices not intended for heavy FastSAM tests")
@@ -151,14 +166,14 @@ def test_rtdetr(task: str = "detect", model: Path = WEIGHTS_DIR / "rtdetr-l.pt",
 def test_fastsam(
     task: str = "segment", model: str = WEIGHTS_DIR / "FastSAM-s.pt", data: str = "coco8-seg.yaml"
 ) -> None:
-    """Test FastSAM model for segmenting objects in images using various prompts within Ultralytics."""
+    """Test FastSAM model for segmenting objects in images using various prompts within RTAP."""
     source = ASSETS / "bus.jpg"
 
-    run(f"yolo segment val {task} model={model} data={data} imgsz=32")
-    run(f"yolo segment predict model={model} source={source} imgsz=32 save")
+    run(f"rtap segment val {task} model={model} data={data} imgsz=32")
+    run(f"rtap segment predict model={model} source={source} imgsz=32 save")
 
-    from ultralytics import FastSAM
-    from ultralytics.models.sam import Predictor
+    from rtap import FastSAM
+    from rtap.models.sam import Predictor
 
     # Create a FastSAM model
     sam_model = FastSAM(model)  # or FastSAM-x.pt
@@ -175,8 +190,8 @@ def test_fastsam(
 
 
 def test_mobilesam() -> None:
-    """Test MobileSAM segmentation with point and box prompts using Ultralytics."""
-    from ultralytics import SAM
+    """Test MobileSAM segmentation with point and box prompts using RTAP."""
+    from rtap import SAM
 
     # Load the model
     model = SAM(WEIGHTS_DIR / "mobile_sam.pt")
@@ -204,8 +219,8 @@ def test_mobilesam() -> None:
 @pytest.mark.skipif(CUDA_DEVICE_COUNT < 2, reason="DDP is not available")
 def test_train_gpu(task: str, model: str, data: str) -> None:
     """Test YOLO training on GPU(s) for various tasks and models."""
-    run(f"yolo train {task} model={model} data={data} imgsz=32 epochs=1 device=0")  # single GPU
-    run(f"yolo train {task} model={model} data={data} imgsz=32 epochs=1 device=0,1")  # multi GPU
+    run(f"rtap train {task} model={model} data={data} imgsz=32 epochs=1 device=0")  # single GPU
+    run(f"rtap train {task} model={model} data={data} imgsz=32 epochs=1 device=0,1")  # multi GPU
 
 
 @pytest.mark.parametrize(
@@ -213,5 +228,5 @@ def test_train_gpu(task: str, model: str, data: str) -> None:
     ["count", "blur", "workout", "heatmap", "isegment", "visioneye", "speed", "queue", "analytics", "trackzone"],
 )
 def test_solutions(solution: str) -> None:
-    """Test yolo solutions command-line modes."""
-    run(f"yolo solutions {solution} verbose=False")
+    """Test rtap solutions command-line modes."""
+    run(f"rtap solutions {solution} verbose=False")

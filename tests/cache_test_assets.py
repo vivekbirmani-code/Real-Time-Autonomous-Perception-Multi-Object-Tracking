@@ -1,4 +1,4 @@
-# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+# RTAP — Real-Time Autonomous Perception (AGPL-3.0)
 """Pre-download shared test assets to avoid race conditions under pytest-xdist.
 
 Run this script once before `pytest -n auto` to ensure all model weights,
@@ -15,10 +15,10 @@ import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from tests import MODEL, SOLUTION_ASSETS
-from ultralytics.cfg import TASK2CALIBRATIONDATA, TASK2DATA, TASK2MODEL
-from ultralytics.data.utils import check_cls_dataset, check_det_dataset
-from ultralytics.utils import ARM64, ASSETS_URL, DATASETS_DIR, IS_RASPBERRYPI, LINUX, LOGGER, WEIGHTS_DIR, checks
-from ultralytics.utils.downloads import attempt_download_asset, safe_download
+from rtap.cfg import TASK2CALIBRATIONDATA, TASK2DATA, TASK2MODEL
+from rtap.data.utils import check_cls_dataset, check_det_dataset
+from rtap.utils import ARM64, ASSETS_URL, DATASETS_DIR, IS_RASPBERRYPI, LINUX, LOGGER, WEIGHTS_DIR, checks
+from rtap.utils.downloads import attempt_download_asset, safe_download
 
 COMMON_WEIGHTS = [
     *TASK2MODEL.values(),
@@ -92,7 +92,7 @@ def cache_clip_model() -> None:
         return
 
     LOGGER.info("[cache] Downloading CLIP text encoder ...")
-    from ultralytics.nn.text_model import CLIP
+    from rtap.nn.text_model import CLIP
 
     model = CLIP("ViT-B/32", device=torch.device("cpu"))
     del model

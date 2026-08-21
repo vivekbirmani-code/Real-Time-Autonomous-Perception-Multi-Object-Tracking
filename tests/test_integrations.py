@@ -1,4 +1,4 @@
-# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+# RTAP — Real-Time Autonomous Perception (AGPL-3.0)
 
 import contextlib
 import subprocess
@@ -8,9 +8,9 @@ from pathlib import Path
 import pytest
 
 from tests import SOURCE
-from ultralytics import YOLO, download
-from ultralytics.utils import ASSETS_URL, DATASETS_DIR, SETTINGS
-from ultralytics.utils.checks import check_requirements
+from rtap import YOLO, download
+from rtap.utils import ASSETS_URL, DATASETS_DIR, SETTINGS
+from rtap.utils.checks import check_requirements
 
 
 @pytest.mark.slow
@@ -129,9 +129,9 @@ def test_triton(tmp_path, isolated_model):
 @pytest.mark.skipif(not check_requirements("faster-coco-eval", install=False), reason="faster-coco-eval not installed")
 def test_faster_coco_eval():
     """Validate YOLO model predictions on COCO dataset using faster-coco-eval."""
-    from ultralytics.models.yolo.detect import DetectionValidator
-    from ultralytics.models.yolo.pose import PoseValidator
-    from ultralytics.models.yolo.segment import SegmentationValidator
+    from rtap.models.yolo.detect import DetectionValidator
+    from rtap.models.yolo.pose import PoseValidator
+    from rtap.models.yolo.segment import SegmentationValidator
 
     args = {"model": "yolo26n.pt", "data": "coco8.yaml", "save_json": True, "imgsz": 64}
     validator = DetectionValidator(args=args)

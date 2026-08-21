@@ -1,4 +1,4 @@
-# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+# RTAP — Real-Time Autonomous Perception (AGPL-3.0)
 
 import asyncio
 import json
@@ -11,8 +11,8 @@ import cv2
 import numpy as np
 import pytest
 
-from ultralytics.data.converter import convert_ndjson_to_yolo
-from ultralytics.utils import YAML
+from rtap.data.converter import convert_ndjson_to_yolo
+from rtap.utils import YAML
 
 
 class _QuietHandler(SimpleHTTPRequestHandler):

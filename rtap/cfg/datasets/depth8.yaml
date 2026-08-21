@@ -1,0 +1,23 @@
+# RTAP — Real-Time Autonomous Perception (AGPL-3.0)
+
+# Depth8 dataset (8 clean-label indoor images from SUN RGB-D Kinect v1/v2, 4 train / 4 val) by RTAP
+# Documentation: /datasets/depth/depth8
+# Example usage: yolo depth train data=depth8.yaml model=yolo26n-depth.pt
+# parent
+# ├── rtap
+# └── datasets
+#     └── depth8 ← downloads here (1.3 MB)
+#         ├── images/{train,val}  # RGB images
+#         └── depth/{train,val}   # paired *.npy, float32 meters (images/ -> depth/)
+
+path: depth8 # dataset root dir (relative to RTAP settings 'datasets_dir')
+train: images/train # train images (relative to 'path') 4 images
+val: images/val # val images (relative to 'path') 4 images
+
+nc: 1
+names:
+  0: depth
+
+channels: 3
+
+# Download script/URL (optional)
